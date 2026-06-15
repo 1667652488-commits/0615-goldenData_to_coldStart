@@ -1,0 +1,22 @@
+cat > .gitignore << 'EOF'
+#环境
+venv/
+
+# 压缩包
+*.rar
+
+# Python 缓存
+__pycache__/
+*.pyc
+
+# Claude Code 本地配置
+.claude/
+
+# IDE
+.vscode/
+.idea/
+
+#其他
+ppt总结等/
+
+EOF
