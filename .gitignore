@@ -1,4 +1,3 @@
-cat > .gitignore << 'EOF'
 #环境
 venv/
 
@@ -17,6 +16,6 @@ __pycache__/
 .idea/
 
 #其他
-ppt总结等/
+ppt总结等/*.pptx
+ppt总结等/*.rar
 skills_2b_checked/
-EOF
