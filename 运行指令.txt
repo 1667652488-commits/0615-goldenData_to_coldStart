@@ -1,0 +1,1 @@
+python phase6_rule_transform.py --rules rules.json --categories intermediate/phase3output.json --trajectories intermediate/badcase_traces/ --skills skills_2b_checked/ --output rules_natural_language2.txt --output-json rules_ranked2.json --top-k-rules 8

@@ -86,11 +86,10 @@
         ]
       },
       "confidence": 0.9,
-      "expected_behavior": "[LLM 调用超时 (intranet): 服务器在 120s 内未响应]",
-      "score_rationality": 0.9,
+      "score_rationality": 0.85,
       "score_importance": 0.95,
       "score_frequency": 0.6925,
-      "score_total": 0.8528,
+      "score_total": 0.8328,
       "rank": 1,
       "rejected": false
     },
@@ -157,11 +156,10 @@
         ]
       },
       "confidence": 0.9,
-      "expected_behavior": "[LLM 调用超时 (intranet): 服务器在 120s 内未响应]",
-      "score_rationality": 0.9,
+      "score_rationality": 0.85,
       "score_importance": 0.95,
       "score_frequency": 0.6925,
-      "score_total": 0.8528,
+      "score_total": 0.8328,
       "rank": 2,
       "rejected": false
     },
@@ -238,7 +236,6 @@
         ]
       },
       "confidence": 0.9,
-      "expected_behavior": "[LLM 调用超时 (intranet): 服务器在 120s 内未响应]",
       "score_rationality": 0.9,
       "score_importance": 0.95,
       "score_frequency": 0.6194,
@@ -315,11 +312,10 @@
         ]
       },
       "confidence": 0.9,
-      "expected_behavior": "[LLM 调用超时 (intranet): 服务器在 120s 内未响应]",
-      "score_rationality": 0.9,
+      "score_rationality": 0.7,
       "score_importance": 0.95,
       "score_frequency": 0.6194,
-      "score_total": 0.8308,
+      "score_total": 0.7508,
       "rank": 4,
       "rejected": false
     },
@@ -393,11 +389,10 @@
         ]
       },
       "confidence": 0.8,
-      "expected_behavior": "[LLM 调用超时 (intranet): 服务器在 120s 内未响应]",
-      "score_rationality": 0.8,
+      "score_rationality": 0.6,
       "score_importance": 0.9,
       "score_frequency": 0.6156,
-      "score_total": 0.7747,
+      "score_total": 0.6947,
       "rank": 5,
       "rejected": false
     }

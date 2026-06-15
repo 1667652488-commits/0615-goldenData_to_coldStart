@@ -1,0 +1,406 @@
+{
+  "meta": {
+    "total_rules": 5,
+    "accepted_rules": 5,
+    "rejected_rules": 0
+  },
+  "rules": [
+    {
+      "id": "R004",
+      "error_category": "CAT004-资金调拨与操作授权缺失",
+      "error_reason": "agent在资金不足需要跨账户调拨时，未按Human-in-the-loop中断规则暂停执行并询问用户授权，而是自行完成了从储蓄卡到理财卡的转账操作，导致用户资金被未经明确同意地转移。",
+      "if_conditions": [
+        {
+          "feature": "CHK006_final",
+          "op": "==",
+          "value": 0,
+          "feature_description": "当购买金额超出当前账户余额，需要从其他账户调拨资金时，agent是否在告知用户缺口并请求指示后，才执行跨账户转账？",
+          "judgment_criteria": "True：agent明确向用户指出当前账户余额不足，并询问用户是否同意从其他账户调拨资金，在用户明确同意（如'好的'、'可以'）后，才执行转账。False：agent在未告知用户的情况下，或告知后未等待用户同意，直接自行执行了跨账户转账。"
+        }
+      ],
+      "then_category": "资金调拨与操作授权缺失",
+      "skill_attribution": {
+        "top3": [
+          {
+            "skill_name": "fund_planning_skill_added_v5",
+            "problematic_rule": "缺少资金调拨前需用户确认的约束",
+            "confidence": 0.9
+          },
+          {
+            "skill_name": "AgentRule",
+            "problematic_rule": "敏感操作清单未包含跨账户转账",
+            "confidence": 0.7
+          },
+          {
+            "skill_name": "AgentRule_added_v5",
+            "problematic_rule": "敏感操作清单未包含跨账户转账",
+            "confidence": 0.7
+          }
+        ],
+        "note": ""
+      },
+      "supporting_trajectories": [
+        "auto-2618e5",
+        "auto-39f227",
+        "auto-5faa84",
+        "auto-8d05fe",
+        "auto-cb522b"
+      ],
+      "few_shots": {
+        "positive_examples": [],
+        "negative_examples": [
+          {
+            "conversation_id": "conv-auto-2618e5",
+            "turns": [
+              "[customer]: 就第一个，投50万，赶紧的。",
+              "[agent]: 好的，您选择的是**工银理财「添利宝」净值型理财产品(XLT1801)**，金额**50万**。我先按流程帮您确认一下。\n\n好的，现在我来查询您的理财卡余额，看看资金是否充足，然后直接帮您购买！\n\n您的理财卡（尾号6605）当前余额为 **1,000.00元**，而您要购买50万，资金不足。我来查一下您的默认储蓄卡余额，看看能否进行资金调配。\n\n\n您的默认储蓄卡（尾号3344）余额为 **125"
+            ],
+            "why": "负例：agent在发现理财卡余额不足（1000元）后，未通知用户或请求授权，直接查询储蓄卡余额并准备进行跨账户转账，违反了资金调拨需用户明确授权的规则。"
+          },
+          {
+            "conversation_id": "conv-auto-5faa84",
+            "turns": [
+              "[customer]: 我看中第一个，添利宝，先买5万块试试。",
+              "[agent]: 好的，您想购买**添利宝（XLT1801）**，金额**5万元**。我先读取选品技能文档，进行确认流程。\n\n根据技能文档，您选择了**添利宝**（对应第一个产品），金额**5万块**，两个槽位都已提取到，我直接进入购买确认流程。\n\n不过，在购买前我需要先查询您的理财账户余额，看看资金是否充足，并进行资金筹划。让我先读取资金筹划技能的文档。\n\n\n好的，现在我来规划整个任务流程。根据您的需求，我们需"
+            ],
+            "why": "负例：agent在仅用户表达购买意向后，未经用户确认或触发Human-in-the-loop，即自行进入资金筹划流程，后续在资金不足时未请求授权即操作转账，违反了敏感操作需用户确认的规则。"
+          }
+        ]
+      },
+      "confidence": 0.9,
+      "expected_behavior": "在资金不足需跨账户调拨时，agent应确保先告知缺口并请求用户授权后再执行。",
+      "score_rationality": 0.85,
+      "score_importance": 0.95,
+      "score_frequency": 0.6925,
+      "score_total": 0.8328,
+      "rank": 1,
+      "rejected": false
+    },
+    {
+      "id": "R003",
+      "error_category": "CAT003-交易最终确认与修改确认缺失",
+      "error_reason": "Agent在用户修改首次确认的交易金额后，未重新获取用户对修改后交易要素的最终确认，直接执行了资金操作，违反了敏感操作需用户确认的Human-in-the-loop中断规则。",
+      "if_conditions": [
+        {
+          "feature": "CHK004_final",
+          "op": "==",
+          "value": 0,
+          "feature_description": "在首次执行购买或转账的前一轮对话中，用户是否对agent汇总的交易要素（产品、金额、方向）给出了明确的肯定确认？",
+          "judgment_criteria": "True：在agent执行API调用的前一回合，用户明确说了'确认'、'是的'、'没问题'等肯定词汇，且agent在前一回合已经清晰展示了待执行的操作要素。False：用户仅表达了购买意向（如'买5万'），agent未经用户二次确认就直接执行。如果用户直接给了最终指令（如'确认，请执行'）且agent执行，也视为True。"
+        },
+        {
+          "feature": "CHK005_final",
+          "op": "==",
+          "value": 0,
+          "feature_description": "在用户对已确认或已执行的交易提出修改后（如改金额），agent在重新执行修改后的交易前，是否向用户展示了新的交易要素并获得了用户对修改后交易的最终确认？",
+          "judgment_criteria": "True：在用户提出修改后，agent重新询问确认（如'确认改为购买30万吗？'），并且用户明确回答确认后，agent才执行修改后的操作。False：用户提出修改后，agent直接基于新的金额或产品执行了操作，没有再次请求用户确认。"
+        }
+      ],
+      "then_category": "交易最终确认与修改确认缺失",
+      "skill_attribution": {
+        "top3": [
+          {
+            "skill_name": "AgentRule",
+            "problematic_rule": "Human-in-the-loop中断规则未覆盖金额修改场景",
+            "confidence": 0.9
+          },
+          {
+            "skill_name": "product_select_skill_added_v5",
+            "problematic_rule": "confirm后修改金额无要求用户再次确认的约束",
+            "confidence": 0.8
+          },
+          {
+            "skill_name": "fund_planning_skill_added_v5",
+            "problematic_rule": "资金筹划前未要求获取用户最终确认",
+            "confidence": 0.7
+          }
+        ],
+        "note": ""
+      },
+      "supporting_trajectories": [
+        "auto-2618e5",
+        "auto-39f227",
+        "auto-5faa84",
+        "auto-cb522b",
+        "auto-2f52c5"
+      ],
+      "few_shots": {
+        "positive_examples": [
+          {
+            "conversation_id": "auto-2f52c5",
+            "turns": [
+              "[customer]: 就这款编号1的，别问来问去了。",
+              "[agent]: 好的，您选择的是 **工银理财「添利宝」净值型理财产品(XLT1801)**，我先读取选品确认的SKILL文档，然后直接帮您操作。\n\n您说\"编号1\"，但没有说金额。我先问一下您要买多少金额。\n\n请问您购买的金额是多少",
+              "[customer]: 买1️⃣0️⃣0️⃣0️⃣0️⃣份，赶紧的！",
+              "[agent]: 好的，您要购买 **添利宝**，金额是 **1️⃣0️⃣0️⃣0️⃣0️⃣份**。不过您说的是\"份\"，添利宝这类净值型理财通常按金额（元）购买，请问您是指 **10000元** 吗？还是按份数购买？"
+            ],
+            "why": "正例：当用户金额表述有歧义（份 vs 元）时，agent通过ask_user确认，未直接执行，符合Human-in-the-loop要求。"
+          }
+        ],
+        "negative_examples": [
+          {
+            "conversation_id": "auto-2618e5",
+            "turns": [
+              "[customer]: 等等，我改主意了，改成30万，剩下的钱给我转回储蓄卡。",
+              "[agent]: 好的，您改成购买30万，剩余的钱转回储蓄卡。我来处理。\n\n目前理财卡余额情况：原有1,000元 + 转入499,000元 = 500,000元。购买30万后，剩余约20万需要转回储蓄卡。\n\n先执行购买30万，再转账剩余资金。\n\n\n\n先查询一下理财卡当前余额，确认资金情况。\n\n\n\n理财卡余额为 **500,000元**，购买30万后剩余约20万。先购买，再转回。\n\n\n\n购买成功！现在将剩余的 **2"
+            ],
+            "why": "负例：用户修改购买金额（从50万改为30万），agent未用ask_user获取最终确认，直接执行购买和转账。"
+          },
+          {
+            "conversation_id": "auto-39f227",
+            "turns": [
+              "[customer]: 算了，改成2万块钱。",
+              "[agent]: 好的，您想改成2万块购买添利宝。我需要重新走资金筹划和购买流程。先更新 todo 状态，然后重新执行 fund_planning_skill。\n\n\n\n现在重新执行资金筹划流程。先查询理财卡余额（刚才转账后余额应有变化）。\n\n\n\n理财卡余额为 **50,000.00元**，购买金额 **2万块（20,000元）**，余额充足，直接购买！\n\n\n\n\n\n\n\n---\n\n## ✅ 任务执行总结（更新）"
+            ],
+            "why": "负例：用户修改购买金额（从5万改为2万），agent未用ask_user获取确认，直接执行资金筹划和购买。"
+          }
+        ]
+      },
+      "confidence": 0.9,
+      "expected_behavior": "在用户修改已确认交易金额后，agent应确保重新展示并获取用户对修改后交易要素的最终确认。",
+      "score_rationality": 0.75,
+      "score_importance": 0.95,
+      "score_frequency": 0.6925,
+      "score_total": 0.7928,
+      "rank": 2,
+      "rejected": false
+    },
+    {
+      "id": "R001",
+      "error_category": "CAT001-身份与账户确认缺失",
+      "error_reason": "Agent在执行资金相关操作（如查询余额、转账、购买理财产品）时，没有主动要求用户确认其身份或涉及的账户信息（如银行卡号、理财卡），或者在用户主动提出身份/账户确认需求时，忽略了该需求直接执行后续操作，导致在未获明确确认的情况下完成敏感操作。",
+      "if_conditions": [
+        {
+          "feature": "CHK001_final",
+          "op": "==",
+          "value": 0,
+          "feature_description": "在首次执行资金相关操作（如查询余额、转账、购买）之前，用户是否明确提供了且agent接受了其身份或账户确认？",
+          "judgment_criteria": "True：在agent执行第一次资金操作之前，用户明确说出了卡号、身份证号或进行了其他足以唯一确认账户的行动（如回答'是的，我是XXX'），并且agent在接收到此确认后才执行操作。False：agent在未获得用户上述确认的情况下，直接调用后端工具执行了资金操作。如果用户主动确认后agent仍直接操作，也判定为True。仅在用户未确认且agent未要求确认就直接操作时判定为False。"
+        }
+      ],
+      "then_category": "身份与账户确认缺失",
+      "skill_attribution": {
+        "top3": [
+          {
+            "skill_name": "AgentRule",
+            "problematic_rule": "缺少在资金操作前强制要求用户确认身份/账户的全局规则",
+            "confidence": 0.9
+          },
+          {
+            "skill_name": "fund_planning_skill_added_v5",
+            "problematic_rule": "缺少在资金筹划前确认用户账户信息的步骤",
+            "confidence": 0.6
+          },
+          {
+            "skill_name": "product_select_skill_added_v5",
+            "problematic_rule": "缺少在确认选品前核验用户账户身份的要求",
+            "confidence": 0.4
+          }
+        ],
+        "note": ""
+      },
+      "supporting_trajectories": [
+        "auto-0f981c",
+        "auto-2618e5",
+        "auto-5faa84",
+        "auto-8d05fe"
+      ],
+      "few_shots": {
+        "positive_examples": [
+          {
+            "conversation_id": "conv-unknown-1",
+            "turns": [
+              "customer: 帮我查一下我的工行卡余额。",
+              "agent: 好的，请问您要查询哪张卡？请提供卡号或确认尾号。"
+            ],
+            "why": "正例：agent在查询余额前主动要求用户确认具体银行卡，体现了身份/账户确认的正确流程。"
+          }
+        ],
+        "negative_examples": [
+          {
+            "conversation_id": "auto-0f981c",
+            "turns": [
+              "customer: 你还没确认我是哪张卡呢，怎么就直接查了？先核实一下我的具体银行卡号吧。",
+              "agent: 您说得对，是我疏忽了。请问您的银行卡号是多少？我帮您核实一下。",
+              "customer: 6222****3344——这尾号你倒是查对了，那我名下还有别的卡吗？一起说清楚。",
+              "agent: 好的，我帮您查一下您名下所有的银行卡信息。\n\n根据查询结果，目前您名下可查到的银行卡信息如下：\n\n---\n\n**您名下的银行卡：**\n\n| 卡号 | 人民币余额 | 人民币可用余额 |\n|------|-----------|--------------|\n| **6222****3344** | **125,680.50 元** | **125,680.50 元** |\n\n目前系统中只查询到 *"
+            ],
+            "why": "负例：用户主动指出agent未确认身份就查余额，虽然agent随后核实了卡号，但初始操作已违反规则。"
+          },
+          {
+            "conversation_id": "auto-2618e5",
+            "turns": [
+              "customer: 就第一个，投50万，赶紧的。",
+              "agent: 好的，您选择的是**工银理财「添利宝」净值型理财产品(XLT1801)**，金额**50万**。我先按流程帮您确认一下。\n\n好的，现在我来查询您的理财卡余额，看看资金是否充足，然后直接帮您购买！\n\n您的理财卡（尾号6605）当前余额为 **1,000.00元**，而您要购买50万，资金不足。我来查一下您的默认储蓄卡余额，看看能否进行资金调配。\n\n您的默认储蓄卡（尾号3344）余额为 **125"
+            ],
+            "why": "负例：agent在用户未明确确认自身身份或账户的情况下，直接开始查询理财卡余额并进行购买操作，跳过了身份确认环节。"
+          }
+        ]
+      },
+      "confidence": 0.9,
+      "expected_behavior": "在资金操作前，agent应确保用户明确确认身份或账户信息。",
+      "score_rationality": 0.8,
+      "score_importance": 0.95,
+      "score_frequency": 0.6194,
+      "score_total": 0.7908,
+      "rank": 3,
+      "rejected": false
+    },
+    {
+      "id": "R005",
+      "error_category": "CAT005-信息查询与系统异常处理不当",
+      "error_reason": "当系统无法获取完整信息（如MCP超时、低码平台数据缺失）时，agent倾向于基于已有知识进行推测性回复（如使用'通常''一般'等模糊表述），或直接跳过信息缺失问题继续后续操作（如提供收益计算），未向用户明确报告系统状态（如'系统目前无法获取到该产品的具体费率'），也未遵循'无法获取准确信息时应向用户明确说明'的全局规则。",
+      "if_conditions": [
+        {
+          "feature": "CHK008_final",
+          "op": "==",
+          "value": 0,
+          "feature_description": "当外部系统调用失败或降级系统返回与先前相同的数据时，agent是否向用户明确报告了系统异常或局限性（如'系统查询超时，当前显示为缓存数据'），并提供了后续操作建议？",
+          "judgment_criteria": "True：agent明确提及'接口超时'、'系统未能获取新数据'、'现在只能提供缓存/历史数据'等，并且提供了重试或联系人工的建议。False：agent未提及异常，直接返回默认数据或重复上一次的数据，给人以系统正常返回新数据的错觉。"
+        }
+      ],
+      "then_category": "信息查询与系统异常处理不当",
+      "skill_attribution": {
+        "top3": [
+          {
+            "skill_name": "AgentRule_added_v5",
+            "problematic_rule": "缺少在数据缺失时明确报告系统状态的约束",
+            "confidence": 0.8
+          },
+          {
+            "skill_name": "AgentRule",
+            "problematic_rule": "缺少在数据缺失时明确报告系统状态的约束",
+            "confidence": 0.8
+          }
+        ],
+        "note": ""
+      },
+      "supporting_trajectories": [
+        "auto-4f2ff0",
+        "auto-64b016",
+        "auto-d14729",
+        "auto-df5ee3",
+        "auto-efc489"
+      ],
+      "few_shots": {
+        "positive_examples": [
+          {
+            "conversation_id": "conv-none",
+            "turns": [
+              "无相关正例轨迹"
+            ],
+            "why": "提供的所有轨迹均为badcase，无正例可引用"
+          }
+        ],
+        "negative_examples": [
+          {
+            "conversation_id": "auto-4f2ff0",
+            "turns": [
+              "[customer]: 请为我介绍一下编号1的「添利宝」产品，包括具体费率和风险评级依据。",
+              "[agent]: 好的，我来查询「添利宝」产品的详细信息。根据 SKILL.md，查询已推荐产品的详细信息也属于 `interact_finance_rec_skill` 的职责范围。\n\n让我先调用 MCP 脚本获取该产品的详细信息：\n\nMCP 超时，继续调用低码平台获取补充信息：\n\n目前系统返回的产品信息中，关于「添利宝」产品的数据字段有限，未能获取到具体的费率和风险评级依据等详细信息。不过，根据已有信息，我可以",
+              "[customer]: 我先投入5️⃣0️⃣0️⃣0️⃣0️⃣元试试看，帮我算算按3.2%的收益率，30天能拿到多少钱？",
+              "[agent]: 好的，我先帮您算一下收益，然后进入选品确认流程。\n\n**收益计算：**\n- 本金：50,000 元\n- 年化收益率：3.2%\n- 持有天数：30 天\n\n收益 = 本金 × 年化收益率 × 持有天数 / 365\n= 50,000 × 3.2% × 30 / 365\n= 50,000 × 0.032 × 30 / 365\n≈ **131.51 元**\n\n也就是说，投入50,000元持有30天，预计可获"
+            ],
+            "why": "负例：agent在无法获取具体费率和风险评级依据后，没有明确向用户报告系统状态（如'系统无法提供该信息'）并征求用户意见，反而试图用模糊信息继续对话，并直接接受了用户的收益计算请求，忽略了信息缺失问题。"
+          },
+          {
+            "conversation_id": "auto-df5ee3",
+            "turns": [
+              "[customer]: 谢谢推荐，不过我想问一下，第1款添利宝的起购金额是多少？还有具体费率是多少？",
+              "[agent]: 好的，您想查询添利宝产品的详细信息，这属于交互式查询产品详情的场景，我来使用 `interact_finance_rec_skill` 处理。\n\nMCP 超时了，但没关系，按照流程继续调用低码平台获取补充信息。\n\n根据您的条件没有找到合适产品，您可以从以下产品中选择或者重新筛选。很抱歉，目前系统返回的产品信息中暂未包含**起购金额**和**具体费率**的详细字段数据。\n\n不过，根据「添利宝」这类固",
+              "[customer]: 你说的\"通常\"和\"一般\"都不够准确，作为银行系统应该能查到确切数据才对，麻烦你再查一下，或者把产品说明书调出来给我看。",
+              "[agent]: 您说得对，我理解您需要准确的数据。让我再尝试通过其他方式查询一下这款产品的详细信息。\n\n根据 SKILL.md 的说明，我已经通过 `call_mcp` 和 `call_versatile` 两次查询了产品信息，但系统返回的数据中确实没有包含起购金额和费率字段。按照文档的处理方式：\n\n> \"如果用户本次交互的目的是查询特定产品属性（如产品期限、起购金额等），而返回的 `products` 中所有产"
+            ],
+            "why": "负例：agent在无法获取起购金额和费率后，使用了模糊表述（如'通常'），用户明确指出了不准确性，但agent仍未能给出系统明确状态说明，而是反复调用工具，说明缺少信息缺失时的系统状态报告规则约束。"
+          }
+        ]
+      },
+      "confidence": 0.8,
+      "expected_behavior": "在外部系统调用失败时，agent应确保明确报告系统异常并提供后续操作建议。",
+      "score_rationality": 0.75,
+      "score_importance": 0.9,
+      "score_frequency": 0.6156,
+      "score_total": 0.7547,
+      "rank": 4,
+      "rejected": false
+    },
+    {
+      "id": "R002",
+      "error_category": "CAT002-输入格式与名称匹配确认缺失",
+      "error_reason": "agent在用户输入异常金额格式（如emoji数字、全角数字）或产品名称不完全匹配（如错别字、同音词）时，未能触发拦截或二次确认流程，而是直接接受并处理，导致后续流程出现歧义或错误。",
+      "if_conditions": [
+        {
+          "feature": "CHK003_final",
+          "op": "==",
+          "value": 0,
+          "feature_description": "当用户输入的产品名与系统中任何产品名不完全一致时，agent是否在向用户确认匹配关系（例如'您是不是指[系统产品名]？'）并获得用户肯定答复后，才将该产品认定为用户选择的标的？",
+          "judgment_criteria": "True：agent在推理或回复中明确向用户提问了产品名称的匹配关系，并且用户明确回答了'是'或'对的'等形式确认。False：agent未询问确认，直接将用户输入映射到系统产品进行操作。"
+        },
+        {
+          "feature": "CHK002_final",
+          "op": "==",
+          "value": 0,
+          "feature_description": "当用户输入的金额包含非标准数字字符（如emoji、全角数字）时，agent是否在后续回复中明确指出该格式问题，并确保用户以标准格式重新输入或确认后，才将该金额用于后续业务计算？",
+          "judgment_criteria": "True：agent回复中指出'您输入的金额包含非标准字符，请确认标准金额'，或类似表述，并等待用户确认或重新输入后，再使用该金额。False：agent未识别或未指出，直接将非标准字符金额作为有效数值进行计算或进入资金流程。"
+        }
+      ],
+      "then_category": "输入格式与名称匹配确认缺失",
+      "skill_attribution": {
+        "top3": [
+          {
+            "skill_name": "product_select_skill_added_v5",
+            "problematic_rule": "金额原文提取规则禁止任何格式校验，导致异常格式直接透传",
+            "confidence": 0.9
+          },
+          {
+            "skill_name": "AgentRule",
+            "problematic_rule": "缺少对异常输入（emoji金额、错别字产品名）的拦截与二次确认规则",
+            "confidence": 0.7
+          },
+          {
+            "skill_name": "AgentRule_added_v5",
+            "problematic_rule": "同上，缺少对异常输入进行拦截或确认的通用约束",
+            "confidence": 0.6
+          }
+        ],
+        "note": ""
+      },
+      "supporting_trajectories": [
+        "auto-8d05fe",
+        "auto-4f2ff0",
+        "auto-ab5316",
+        "auto-efba51"
+      ],
+      "few_shots": {
+        "positive_examples": [],
+        "negative_examples": [
+          {
+            "conversation_id": "auto-8d05fe",
+            "turns": [
+              "customer: 我投1️⃣0️⃣0️⃣0️⃣0️⃣块。",
+              "agent: 好的，您选择了**工银理财「添利宝」**，金额**1️⃣0️⃣0️⃣0️⃣0️⃣块**。我先更新一下任务规划，然后读取资金筹划技能的文档来执行购买。"
+            ],
+            "why": "用户输入含emoji数字的金额，agent未识别为异常格式并请求确认，直接接受并继续执行购买流程。"
+          },
+          {
+            "conversation_id": "auto-ab5316",
+            "turns": [
+              "customer: 我说的是天利宝，你推荐这个什么宝啊，赶紧看看名字对不对！",
+              "agent: 用户指出我说的产品名称不对，他说的是\"天利宝\"，而推荐列表里的是\"添利宝\"。不过从推荐结果来看，产品列表中第一个是\"工银理财「添利宝」净值型理财产品(XLT1801)\"，用户说的\"天利宝\"很可能就是指这个产品（添利宝），但用户现在质疑名称不对。"
+            ],
+            "why": "用户输入的产品名称'天利宝'与推荐列表中的'添利宝'不完全匹配，agent未触发二次确认或拦截，而是自行推理为同一产品。"
+          }
+        ]
+      },
+      "confidence": 0.9,
+      "expected_behavior": "在用户输入格式异常或名称不匹配时，agent应确保先确认并修正后再执行后续处理。",
+      "score_rationality": 0.65,
+      "score_importance": 0.95,
+      "score_frequency": 0.6194,
+      "score_total": 0.7308,
+      "rank": 5,
+      "rejected": false
+    }
+  ],
+  "rejected_rules": []
+}

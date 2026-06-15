@@ -64,6 +64,7 @@ class RankedRule:
     score_total: float = 0.0         # 综合得分 (0-1)
     rank: int = 0                    # 排名
     rejected: bool = False           # 是否被筛掉
+    expected_behavior: str = ""      # 正确行为指引（在xx情况下，agent应该怎么做）
 
 
 # ==================== 数据加载 ====================
@@ -331,12 +332,93 @@ def _parse_json(raw: str) -> Optional[Dict]:
     return None
 
 
+# ==================== 正确行为指引生成 ====================
+
+BEHAVIOR_SYSTEM_PROMPT = """你是一个对话式 AI 系统的行为规范专家。
+
+你将收到一条 badcase 规则（包含错误描述和触发条件），请基于这些信息，
+生成一段"正确行为指引"——描述在对应场景下，agent 应该怎么做。
+
+核心原则：
+- 聚焦"最终状态"而非"具体步骤"：描述最终应达成的正确状态，而非列举执行步骤
+- 从原则层面概括，不陷入中间细节
+- 用"在...情况下，agent应确保..."的格式
+- 一句话概括，不超过50字
+- 不要引用规则文档，只凭对业务场景的常识判断
+
+输出格式（严格一行文本，不要加前缀标签）：
+在[触发场景]情况下，agent应确保[最终正确状态]"""
+
+
+def generate_expected_behaviors(rules: List[Dict], max_retries: int = 2) -> Dict[str, str]:
+    """为每条规则生成"正确行为指引"
+
+    Returns:
+        {rule_id: expected_behavior_text}
+    """
+    behaviors = {}
+    for rule in rules:
+        rule_id = rule.get('id', '')
+        error_reason = rule.get('error_reason', '')
+        then_category = rule.get('then_category', '')
+        if_conditions = rule.get('if_conditions', [])
+
+        # 从 if_conditions 提取场景描述
+        scene_parts = []
+        for cond in if_conditions:
+            desc = cond.get('feature_description', '')
+            if desc:
+                scene_parts.append(desc)
+
+        scene_text = '；'.join(scene_parts) if scene_parts else then_category
+
+        prompt = f"""请为以下 badcase 规则生成"正确行为指引"：
+
+=== 规则 ===
+错误类别: {then_category}
+错误原因: {error_reason}
+触发场景: {scene_text}
+
+请输出一句话正确行为指引（不超过50字）。"""
+
+        messages = [
+            {"role": "system", "content": BEHAVIOR_SYSTEM_PROMPT},
+            {"role": "user", "content": prompt}
+        ]
+
+        behavior = ""
+        for attempt in range(max_retries):
+            raw = call_llm(messages).strip()
+            # 检测 LLM 调用失败（超时/错误等）
+            if raw.startswith('[') and ('超时' in raw or '错误' in raw or '失败' in raw):
+                continue
+            # 清理可能的标签前缀
+            raw = re.sub(r'^(正确行为指引|expected_behavior|行为指引)[：:]\s*', '', raw)
+            raw = re.sub(r'^["「『]|["」』]$', '', raw)
+            if raw and len(raw) <= 100:
+                behavior = raw
+                break
+            elif raw:
+                behavior = raw[:80]
+                break
+
+        if not behavior:
+            # 降级：从 error_reason 反转生成
+            behavior = f"在{then_category}场景下，agent应确保遵守相关合规要求"
+
+        behaviors[rule_id] = behavior
+        print(f"  规则 {rule_id} 正确行为指引: {behavior}")
+
+    return behaviors
+
+
 # ==================== 综合排序 ====================
 
 def rank_rules(rules: List[Dict],
                frequency_scores: Dict[str, float],
                importance_scores: Dict[str, float],
                rationality_scores: Dict[str, Tuple[float, List[str]]],
+               expected_behaviors: Dict[str, str],
                weights: Tuple[float, float, float] = (0.4, 0.3, 0.3)) -> List[RankedRule]:
     """对规则进行三维加权排序"""
 
@@ -365,6 +447,7 @@ def rank_rules(rules: List[Dict],
             score_importance=i_score,
             score_frequency=f_score,
             score_total=total,
+            expected_behavior=expected_behaviors.get(rule_id, ''),
         )
         ranked.append(ranked_rule)
 
@@ -422,6 +505,10 @@ def format_rule_nl(rule: RankedRule, index: int) -> str:
 
     # 判定标准（从 error_reason 生成）
     lines.append(f"\t判定标准：{rule.error_reason}")
+
+    # 正确行为指引（v4新增）
+    if rule.expected_behavior:
+        lines.append(f"\t正确行为：{rule.expected_behavior}")
 
     # IF-THEN 自然语言化
     lines.append(f"\t检查条件：")
@@ -561,6 +648,7 @@ def save_ranked_json(ranked: List[RankedRule], output_path: str):
             'few_shots': r.few_shots,
             'confidence': r.confidence,
             # Phase6 排序字段
+            'expected_behavior': r.expected_behavior,
             'score_rationality': round(r.score_rationality, 4),
             'score_importance': round(r.score_importance, 4),
             'score_frequency': round(r.score_frequency, 4),
@@ -596,7 +684,7 @@ def print_report(ranked: List[RankedRule]):
     print("-" * 100)
 
     for r in ranked:
-        status = "✓ 保留" if not r.rejected else "✗ 剔除"
+        status = "保留" if not r.rejected else "剔除"
         print(f"#{r.rank:<5}{r.rule_id:<8}{r.error_category[:28]:<30}{r.score_total:<8.3f}"
               f"{r.score_rationality:<8.3f}{r.score_importance:<8.3f}{r.score_frequency:<8.3f}{status}")
 
@@ -665,6 +753,10 @@ def main():
     print("计算重要性得分...")
     importance_scores = compute_importance_scores(rules, categories_data)
 
+    # 2.5 生成正确行为指引
+    print("\n生成正确行为指引...")
+    expected_behaviors = generate_expected_behaviors(rules, max_retries=args.max_retries)
+
     # 3. 计算合理性得分（LLM 对抗性审查）
     if args.no_llm_review:
         print("\n跳过 LLM 合理性审查（--no-llm-review）")
@@ -682,7 +774,7 @@ def main():
     # 4. 综合排序
     print("\n综合排序...")
     ranked = rank_rules(rules, frequency_scores, importance_scores,
-                        rationality_scores, weights=weights)
+                        rationality_scores, expected_behaviors, weights=weights)
 
     # 5. 筛选
     print("筛选规则...")

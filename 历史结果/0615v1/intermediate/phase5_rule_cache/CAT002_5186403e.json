@@ -1,0 +1,57 @@
+{
+  "error_reason": "agent在用户输入异常金额格式（如emoji数字、全角数字）或产品名称不完全匹配（如错别字、同音词）时，未能触发拦截或二次确认流程，而是直接接受并处理，导致后续流程出现歧义或错误。",
+  "if_conditions": [
+    {
+      "feature": "CHK003_final",
+      "op": "==",
+      "value": 0
+    },
+    {
+      "feature": "CHK002_final",
+      "op": "==",
+      "value": 0
+    }
+  ],
+  "skill_attribution": {
+    "top3": [
+      {
+        "skill_name": "product_select_skill_added_v5",
+        "problematic_rule": "金额原文提取规则禁止任何格式校验，导致异常格式直接透传",
+        "confidence": 0.9
+      },
+      {
+        "skill_name": "AgentRule",
+        "problematic_rule": "缺少对异常输入（emoji金额、错别字产品名）的拦截与二次确认规则",
+        "confidence": 0.7
+      },
+      {
+        "skill_name": "AgentRule_added_v5",
+        "problematic_rule": "同上，缺少对异常输入进行拦截或确认的通用约束",
+        "confidence": 0.6
+      }
+    ],
+    "note": ""
+  },
+  "confidence": 0.9,
+  "few_shots": {
+    "positive_examples": [],
+    "negative_examples": [
+      {
+        "conversation_id": "auto-8d05fe",
+        "turns": [
+          "customer: 我投1️⃣0️⃣0️⃣0️⃣0️⃣块。",
+          "agent: 好的，您选择了**工银理财「添利宝」**，金额**1️⃣0️⃣0️⃣0️⃣0️⃣块**。我先更新一下任务规划，然后读取资金筹划技能的文档来执行购买。"
+        ],
+        "why": "用户输入含emoji数字的金额，agent未识别为异常格式并请求确认，直接接受并继续执行购买流程。"
+      },
+      {
+        "conversation_id": "auto-ab5316",
+        "turns": [
+          "customer: 我说的是天利宝，你推荐这个什么宝啊，赶紧看看名字对不对！",
+          "agent: 用户指出我说的产品名称不对，他说的是\"天利宝\"，而推荐列表里的是\"添利宝\"。不过从推荐结果来看，产品列表中第一个是\"工银理财「添利宝」净值型理财产品(XLT1801)\"，用户说的\"天利宝\"很可能就是指这个产品（添利宝），但用户现在质疑名称不对。"
+        ],
+        "why": "用户输入的产品名称'天利宝'与推荐列表中的'添利宝'不完全匹配，agent未触发二次确认或拦截，而是自行推理为同一产品。"
+      }
+    ]
+  }
+}
