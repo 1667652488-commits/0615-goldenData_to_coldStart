@@ -1,0 +1,38 @@
+{
+    "python.defaultInterpreterPath": "D:\\transformer\\anaconda\\envs\\custom_trans\\python.exe",
+    "files.autoSave": "afterDelay",
+    "Codegeex.Privacy": true,
+    "Codegeex.License": "",
+    "claudeCode.preferredLocation": "panel",
+    "claudeCode.environmentVariables": [
+    
+        
+
+
+        {
+            "name": "ANTHROPIC_BASE_URL",
+            "value": "https://api.siliconflow.cn/"
+        },
+        {
+            "name": "ANTHROPIC_AUTH_TOKEN",
+            "value": "sk-ujjwatckhsqtmptlfzwkazagayqbjosmgknyftutiqdjnfgw"
+        },
+        {
+            "name": "ANTHROPIC_MODEL",
+            "value": "Pro/zai-org/GLM-5.1"
+        }
+    ],
+    "claudeCode.selectedModel": "Pro/zai-org/GLM-5.1",
+    "claudeCode.disableThinking": false,
+    "claudeCode.disableLoginPrompt": true,
+    "claudeCode.disableTools": false,
+    "claudeCode.stream": true,
+    "chat.agentFilesLocations": {
+        ".github/agents": true,
+        ".claude/agents": true,
+        "~/.copilot/agents": true,
+        "~/.superpowers-copilot/agents": true
+    },
+    "claudeCode.useTerminal": true,
+    "python.createEnvironment.trigger": "off"
+}
