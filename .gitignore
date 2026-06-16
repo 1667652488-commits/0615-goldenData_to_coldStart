@@ -1,8 +1,8 @@
 #环境
 venv/
 
-# 压缩包
-*.rar
+# 压缩包（ppt总结等下的rar仍排除）
+ppt总结等/*.rar
 
 # Python 缓存
 __pycache__/
@@ -17,5 +17,4 @@ __pycache__/
 
 #其他
 ppt总结等/*.pptx
-ppt总结等/*.rar
 skills_2b_checked/
